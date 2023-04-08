@@ -63,30 +63,10 @@ function sourcegraph#construct_local_repo_query()
     return 'repo:^' .. s:git_repo_normalised() .. '$' .. ' rev:' .. s:git_latest_pushed_revision()
 endfunction
 
-function sourcegraph#fzf_search(query, bang)
-    call fzf#run(
-    \  fzf#wrap(
-    \    fzf#vim#with_preview(
-    \      {
-    \        'source': v:lua.require("sourcegraph").search(a:query),
-    \        'sink*': function('s:open_file_by_match_line'),
-    \        'options': ['--ansi', '--prompt', '> ',
-    \                   '--delimiter', ':', '--preview-window', '+{2}-/2']
-    \      },
-    \    )
-    \  ),
-    \  a:bang
-    \)
-endfunction
-
-function! sourcegraph#fzf_local_git_repo(query, bang)
-    call sourcegraph#fzf_search(sourcegraph#construct_local_repo_query() .. ' ' .. a:query, a:bang)
-endfunction
-
-function! sourcegraph#fzf_local_git_repo_content(query, bang)
-    call sourcegraph#fzf_local_git_repo('type:file ' .. a:query, a:bang)
-endfunction
-
-function! sourcegraph#fzf_local_git_repo_files(query, bang)
-    call sourcegraph#fzf_local_git_repo('type:path ' .. a:query, a:bang)
+function sourcegraph#fzf_search_opts(query)
+    return {
+    \   'source': v:lua.require("sourcegraph").search(a:query),
+    \   'sink*': function('s:open_file_by_match_line'),
+    \   'options': ['--ansi', '--prompt', '> ', '--delimiter', ':', '--preview-window', '+{2}-/2']
+    \ }
 endfunction
