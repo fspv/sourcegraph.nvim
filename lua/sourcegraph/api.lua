@@ -81,6 +81,7 @@ M.search = function(api_url, api_token, query, display_limit)
 
   assert(out ~= nil, "sourcegraph: no response from sourcegraph")
   assert(out.exit == 0, "sourcegraph: Error " .. out.exit .. " querying sourcegraph")
+  assert(out.status == 200, "sourcegraph: Got code " .. out.status .. " querying sourcegraph. Response: " .. out.body)
 
   -- Uncomment for debug
   -- print(vim.inspect.inspect(out))
