@@ -24,8 +24,8 @@ local M = {
     util.assert_type(api_url, "string")
     util.assert_type(api_token, "string")
 
-    _config.sourcegraph_api_url = api_url
-    _config.sourcegraph_api_token = api_token
+    _config.api_url = api_url
+    _config.api_token = api_token
   end,
   ---Wrapper around raw API search results into strings that many of the tools understand
   ---Output is a list of lines in the following format
@@ -36,7 +36,7 @@ local M = {
   ---@return string[]
   search = function(query, display_limit)
     return parse.sourcegraph_api_matches_to_files(
-      api.search(_config.api_url, _config.api_url, query, display_limit).matches
+      api.search(_config.api_url, _config.api_token, query, display_limit).matches
     )
   end,
   api = {
