@@ -4,7 +4,7 @@
 
 " Predefined command to search a local git repo. User is not required to use
 " it, this is just an example, the user can refer to
-command! -bang -nargs=* SourceGraphLocalGitRepo call fzf#run(
+command! -bang -nargs=* SourceGraph call fzf#run(
 \   fzf#wrap(
 \     fzf#vim#with_preview(
 \       sourcegraph#fzf_search_opts(
@@ -17,4 +17,4 @@ command! -bang -nargs=* SourceGraphLocalGitRepo call fzf#run(
 \ )
 
 " Command to search a word under cursor in the source graph
-map sg/ :SourceGraphLocalGitRepo <C-r><C-w><CR>
+map sg/ :SourceGraph <C-r><C-w><CR>

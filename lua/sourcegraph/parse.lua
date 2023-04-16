@@ -92,7 +92,8 @@ end
 --- ```
 ---
 ---Output is a list of lines in the following format
----`<path>:<line number>:<offset in line>:<line content>`
+---`<path>` - in case of a match in a file path
+---`<path>:<line number>:<offset in line>:<line content>` - in case of content match in the file
 ---
 ---@param matches SourceGraphAPIMatch[]
 ---@return string[]
@@ -101,7 +102,6 @@ M.sourcegraph_api_matches_to_files = function(matches)
 
   ---@type string[]
   local results = {}
-
 
   for _, match in ipairs(matches) do
     local path = match.path
@@ -121,6 +121,73 @@ M.sourcegraph_api_matches_to_files = function(matches)
   end
 
   return results
+end
+
+---@class Match
+---@field filename string
+---@field line integer|nil
+---@field column integer|nil
+
+
+---Parse path returned by `sourcegraph_api_matches_to_files` method
+---
+---@param path string  # Path to parse
+---@return Match
+M._parse_match = function(path)
+  util.assert_type(path, "string")
+
+  ---Parsed params from path
+  ---@type string[]
+  local params = {}
+
+  for param in (path .. ":"):gmatch("([^:]*):") do
+    table.insert(params, param)
+  end
+
+  -- It should be either a path match, in which case only file path should be
+  -- returned
+  -- Otherwise it should contain at least <path>:<line>:<column>:<content>,
+  -- where content might contain colons on its own, hence ">4"
+  assert(#params == 1 or #params >= 4, "sourcegraph: malformed path: " .. path .. " has " .. #params .. " fields")
+
+  -- Filename should be always present
+  -- TODO escape filename
+  local filename = params[1]
+
+  if #params == 1 then
+    -- Path match, nothing else left to do
+    return { filename = filename }
+  end
+
+  -- Check if line and column is provided
+  local line = util.tointeger(params[2])
+  local column = util.tointeger(params[3])
+
+  assert(line >= 0 and column >= 0, "sourcegraph: inccorect values for line and column: " .. line .. ", " .. column)
+
+  return { filename = filename, line = line, column = column }
+end
+
+---Open file using the path returned from the `sourcegraph_api_matches_to_files` method
+---
+---@param path string # Either a path to the file or a colon separated list of fields as expected to be returned from the `sourcegraph_api_matches_to_files` method
+---@param cmd string  # Command to open file ("e" by default)
+M.open_file_from_match = function(path, cmd)
+  util.assert_type(path, "string")
+  util.assert_type(cmd, "string")
+
+  local match = M._parse_match(path)
+
+  -- Open file
+  vim.cmd(cmd .. " " .. match.filename)
+
+  local line = match.line
+  local column = match.column
+
+  -- In case line and column are specified, try to move cursor there
+  if line ~= nil and column ~= nil then
+    vim.api.nvim_win_set_cursor(0, { line, column - 1 })
+  end
 end
 
 return M
