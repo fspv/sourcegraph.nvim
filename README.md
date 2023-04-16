@@ -1,6 +1,10 @@
 # SourceGraph for NeoVIM
 Query SourceGraph from NeoVIM, display search results and open local files directly from search.
 
+![input (1)](https://user-images.githubusercontent.com/1616237/232343594-61e26f68-3b15-4ce8-bbd1-48afc854cd4a.gif)
+
+
+
 # Installation
 This plugin has a hard dependency on [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) since standard nvim lua library can't make web requests. So install together those two plugins together.
 
@@ -63,4 +67,4 @@ EOF
 ```
 
 # TODO
-[ ] Add lsp to complete search
+- [ ] Add lsp to complete search
