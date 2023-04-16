@@ -64,6 +64,8 @@ function sourcegraph#construct_local_repo_query()
 endfunction
 
 function sourcegraph#fzf_search_opts(query)
+    " Minimal working set of fzf options. User can copy paste this in case
+    " they want to use custom paramters
     return {
     \   'source': v:lua.require("sourcegraph").search(a:query),
     \   'sink*': function('s:open_file_by_match_line'),
