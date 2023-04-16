@@ -11,7 +11,7 @@ local api = require("sourcegraph.api")
 ---@field api_token string|nil # API token (can be empty, there are some functions available without auth)
 ---@field open_file_cmd string # Vimscript command to be used for opening files
 local _config = {
-  api_url = "https://sourcegraph.com/.api/search/stream",
+  api_url = "https://sourcegraph.com/.api",
   api_token = nil,
   open_file_cmd = "e",
 }

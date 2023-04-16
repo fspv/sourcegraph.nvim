@@ -66,7 +66,7 @@ M.search = function(api_url, api_token, query, display_limit)
 
   local curl = require("plenary.curl")
 
-  local url = api_url .. "?q=" .. util.url_encode(query)
+  local url = api_url .. "/search/stream?q=" .. util.url_encode(query)
   if display_limit ~= nil then
     url = url .. "&display=" .. display_limit
   end
