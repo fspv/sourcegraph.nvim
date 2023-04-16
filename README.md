@@ -4,7 +4,7 @@ Query SourceGraph from NeoVIM, display search results and open local files direc
 ![ezgif-3-da68b59bd3](https://user-images.githubusercontent.com/1616237/232345301-f995fcbf-a4f4-404a-967c-ef0b5283ca01.gif)
 
 # Installation
-This plugin has a hard dependency on [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) since standard nvim lua library can't make web requests. So install together those two plugins together.
+This plugin has a hard dependency on [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) since standard nvim lua library can't make web requests. So install those two plugins together.
 
 Also for quickstart you can install [fzf](https://github.com/junegunn/fzf.vim) plugin, for which there are basic commands predefined already.
 
