@@ -74,10 +74,10 @@ M.search = function(api_url, api_token, query, display_limit)
   local headers = { accept = "text/event-stream" }
 
   if api_token ~= "" and api_token ~= nil then
-    headers.authorization = "token: " .. api_token
+    headers.authorization = "token " .. api_token
   end
 
-  local out = curl.get(url, headers)
+  local out = curl.get(url, { headers = headers })
 
   assert(out ~= nil, "sourcegraph: no response from sourcegraph")
   assert(out.exit == 0, "sourcegraph: Error " .. out.exit .. " querying sourcegraph")
