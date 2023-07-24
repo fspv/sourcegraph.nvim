@@ -12,13 +12,15 @@ endfunction
 function s:git_latest_pushed_revision()
     " The latest revision, which has been pushed remotely, because obviously
     " sourcegraph doesn't know anything about our local commits
-    return trim(system("git rev-parse @{push}"))
+    return trim(system("git rev-parse @{push} 2>/dev/null || git rev-parse HEAD"))
 endfunction
 
 function sourcegraph#construct_local_repo_query()
     " Example function to construct a sourcegraph query to filter by the local
     " repo and the most recent pushed commit, which should be the most common
     " case
+
+    " TODO: check if the revision exists remotely
     return 'repo:^' .. s:git_repo_normalised() .. '$' .. ' rev:' .. s:git_latest_pushed_revision()
 endfunction
 
