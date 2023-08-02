@@ -12,7 +12,7 @@ endfunction
 function s:git_latest_pushed_revision()
     " The latest revision, which has been pushed remotely, because obviously
     " sourcegraph doesn't know anything about our local commits
-    return trim(system("git rev-parse @{push} 2>/dev/null || git rev-parse HEAD"))
+    return trim(system("git rev-parse --short @{push} 2>/dev/null || git rev-parse --short HEAD"))
 endfunction
 
 function sourcegraph#construct_local_repo_query()
