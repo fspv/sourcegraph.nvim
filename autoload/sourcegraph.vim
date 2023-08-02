@@ -21,7 +21,7 @@ function sourcegraph#construct_local_repo_query()
     " case
 
     " TODO: check if the revision exists remotely
-    return 'repo:^' .. s:git_repo_normalised() .. '$' .. ' rev:' .. s:git_latest_pushed_revision()
+    return 'repo:^' .. s:git_repo_normalised() .. '$' .. '@' .. s:git_latest_pushed_revision()
 endfunction
 
 function sourcegraph#fzf_search_opts(query)
