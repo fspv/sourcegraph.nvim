@@ -49,6 +49,79 @@ describe("lua parser test", function()
     assert.same({ filename = "a", line = 123, column = 234 }, parse._parse_match("a:123:234:test"))
     assert.same({ filename = "a", line = 123, column = 234 }, parse._parse_match("a:123:234:test: int"))
   end)
+
+  it("test path line parser", function()
+    local matches = {
+      {
+        lineMatches = {
+          {
+            line = 'sample line content',
+            lineNumber = 84,
+            offsetAndLengths = { { 4, 2 }, { 9, 5 } }
+          },
+        },
+        pathMatches = {
+          {
+            ["end"] = { column = 63, line = 0, offset = 63 },
+            start = { column = 59, line = 0, offset = 59 }
+          },
+        },
+        path = "sample/path",
+        type = "content",
+      }
+    }
+    assert.same(
+      {
+        {
+          path = "sample/path",
+          line = 85,
+          column = 5,
+          content = "sample line content",
+          matches = {
+            { start = 4, stop = 6 },
+            { start = 9, stop = 14 }
+          },
+        }
+      },
+      parse.parse_sourcegraph_api_line_matches(matches)
+    )
+    assert.same(
+      {
+        {
+          path = "sample/path",
+          matches = {
+            { start = 59, stop = 63 },
+          },
+        }
+      },
+      parse.parse_sourcegraph_api_path_matches(matches)
+    )
+    assert.same(
+      {
+        string.format(
+          "%s[%smsample/path%s[%sm:%s[%sm85%s[%sm:5:samp%s[%smle%s[%sm li%s[%smne co%s[%smntent",
+          string.char(27),
+          35,
+          string.char(27),
+          0,
+          string.char(27),
+          32,
+          string.char(27),
+          0,
+          string.char(27),
+          31,
+          string.char(27),
+          0,
+          string.char(27),
+          31,
+          string.char(27),
+          0
+        ),
+        "sample/path"
+      },
+      parse.format_and_color_sourcegraph_api_matches(matches)
+    )
+  end)
 end)
 
 describe("lua e2e", function()
@@ -58,5 +131,19 @@ describe("lua e2e", function()
     local result = sourcegraph.search("test", -1)
     assert.is_table(result)
     assert.is_true(#result > 0)
+  end)
+
+  it("test basic query raw", function()
+    local result = sourcegraph.search_raw("test", -1)
+    assert.is_table(result)
+    assert.is_true(#result.line_matches > 0)
+    assert.is_true(#result.path_matches > 0)
+  end)
+
+  it("test basic query through api", function()
+    local result = sourcegraph.api.search("https://sourcegraph.com/.api", nil, "test", -1)
+    assert.is_table(result)
+    assert.is_true(#result.filters > 0)
+    assert.is_true(#result.matches > 0)
   end)
 end)
