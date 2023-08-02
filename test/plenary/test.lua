@@ -1,7 +1,7 @@
 describe("vimscript tests", function()
   it("test repo query generated correctly", function()
     assert.matches(
-      "^repo:.github.com.[a-zA-Z0-9]*.[a-zA-Z0-9]*. rev:[a-z0-9]*$",
+      "^repo:.github.com.[a-zA-Z0-9]*.[a-zA-Z0-9]*.@[a-z0-9]*$",
       vim.api.nvim_eval("sourcegraph#construct_local_repo_query()")
     )
   end)
@@ -138,6 +138,7 @@ describe("lua e2e", function()
     assert.is_table(result)
     assert.is_true(#result.line_matches > 0)
     assert.is_true(#result.path_matches > 0)
+    assert.is_true(#result.filters > 0)
   end)
 
   it("test basic query through api", function()
