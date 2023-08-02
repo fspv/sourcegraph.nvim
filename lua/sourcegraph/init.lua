@@ -16,6 +16,10 @@ local _config = {
   open_file_cmd = "e",
 }
 
+---@class RawSearchResult
+---@field line_matches LineMatch[]
+---@field path_matches PathMatch[]
+
 local M = {
   -- Top level functions are the ones that user usually wants to call
   ---Initialise the plugin with custom parameters
@@ -49,9 +53,24 @@ local M = {
   ---@param display_limit  number  # The maximum number of matches the backend returns. Defaults to -1 (no limit).
   ---@return string[]
   search = function(query, display_limit)
-    return parse.sourcegraph_api_matches_to_files(
+    return parse.format_and_color_sourcegraph_api_matches(
       api.search(_config.api_url, _config.api_token, query, display_limit).matches
     )
+  end,
+  ---Wrapper around raw API search results converting them into the
+  ---`LineMatch` and `PathMatch` objects, so they can later be used
+  ---to create custom logic on top
+  ---TODO: add objects description
+  ---
+  ---@param query string  # A Sourcegraph query string (see [search query syntax](https://docs.sourcegraph.com/code_search/reference/queries))
+  ---@param display_limit  number  # The maximum number of matches the backend returns. Defaults to -1 (no limit).
+  ---@return RawSearchResult
+  search_raw = function(query, display_limit)
+    local matches = api.search(_config.api_url, _config.api_token, query, display_limit).matches
+    return {
+      line_matches = parse.parse_sourcegraph_api_line_matches(matches),
+      path_matches = parse.parse_sourcegraph_api_path_matches(matches),
+    }
   end,
   ---Open files using the path returned from the `search` method
   ---

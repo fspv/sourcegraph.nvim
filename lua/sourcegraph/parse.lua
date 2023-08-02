@@ -3,6 +3,94 @@ local M = {}
 local util = require("sourcegraph.util")
 local color = require("sourcegraph.color")
 
+---A structure hoding line matches, which can be returned to the external
+---users (such as Telescope plugin, for example). We can't do it with the
+---SourceGraphAPILineMatch structure, as it is internal only object, which
+---can't be exposed outside
+---@class LineMatch
+---@field path string
+---@field line integer
+---@field column integer
+---@field content string
+---@field matches Interval[]
+
+---Convert SourceGraphAPILineMatch to a less SourceGraph specific LineMatch
+---@param path string
+---@param line_match SourceGraphAPILineMatch
+---@return LineMatch
+local line_match_convert = function(path, line_match)
+  util.assert_type(path, "string")
+  util.assert_type(line_match, "table")
+
+  -- +1 since vim counts lines starting from 1
+  local line_number = util.tointeger(line_match.lineNumber) + 1
+  ---@type string
+  local content = line_match.line
+
+  ---@type Interval[]
+  local interval_matches = {}
+  local column = string.len(content)
+
+  ---@type string[]
+  for _, offset_and_length in ipairs(line_match.offsetAndLengths) do
+    local offset = util.tointeger(offset_and_length[1])
+
+    local length = util.tointeger(offset_and_length[2])
+    table.insert(interval_matches, { start = offset, stop = offset + length })
+
+    -- +1 since vim counts columns starting from 1
+    -- We highlight multiple matches, but will return only the first column to
+    -- avoid returning multiple resules for the same string
+    column = math.min(offset + 1, column)
+  end
+
+  -- TODO: why fields are not properly verified?
+  ---@type LineMatch
+  local result = {
+    path = path,
+    line = line_number,
+    column = column,
+    content = content,
+    matches = util.merge_intervals(interval_matches),
+  }
+
+  return result
+end
+
+---A structure hoding path matches, which can be returned to the external
+---users (such as Telescope plugin, for example). We can't do it with the
+---SourceGraphAPIPathMatch structure, as it is internal only object, which
+---can't be exposed outside
+---@class PathMatch
+---@field path string
+---@field matches Interval[]
+
+---Convert SourceGraphAPIPathMatch to a less SourceGraph specific PathMatch
+---@param path string
+---@param path_matches SourceGraphAPIPathMatch[]
+---@return PathMatch
+local path_matches_convert = function(path, path_matches)
+  util.assert_type(path, "string")
+  util.assert_type(path_matches, "table")
+
+  ---@type Interval[]
+  local interval_matches = {}
+
+  for _, path_match in ipairs(path_matches) do
+    ---@type Interval
+    local interval_match = { start = path_match.start.column, stop = path_match["end"].column }
+    table.insert(interval_matches, interval_match)
+  end
+
+  ---@type PathMatch
+  local result = {
+    path = path,
+    matches = util.merge_intervals(interval_matches)
+  }
+
+  return result
+end
+
 ---Process a single line match and return a formatted string
 ---Example line match:
 ---```
@@ -13,35 +101,18 @@ local color = require("sourcegraph.color")
 ---}
 ---```
 ---@param path string
----@param line_match SourceGraphAPILineMatch
+---@param sourcegraph_line_match SourceGraphAPILineMatch
 ---@return string
-local process_line_matches = function(path, line_match)
-  -- +1 since vim counts lines starting from 1
-  local line_number = util.tointeger(line_match.lineNumber) + 1
-  ---@type string
-  local content = line_match.line
+local format_and_color_line_matches = function(path, sourcegraph_line_match)
+  util.assert_type(path, "string")
+  util.assert_type(sourcegraph_line_match, "table")
 
-  ---@type Interval[]
-  local interval_match = {}
-  local column = string.len(content)
-
-  ---@type string[]
-  for _, offset_and_length in ipairs(line_match.offsetAndLengths) do
-    local offset = util.tointeger(offset_and_length[1])
-
-    local length = util.tointeger(offset_and_length[2])
-    table.insert(interval_match, { start = offset, stop = offset + length })
-
-    -- +1 since vim counts columns starting from 1
-    -- We highlight multiple matches, but will return only the first column to
-    -- avoid returning multiple resules for the same string
-    column = math.min(offset + 1, column)
-  end
+  local line_match = line_match_convert(path, sourcegraph_line_match)
 
   return color.color_string(color.COLORS.purple, path) ..
-      ':' .. color.color_string(color.COLORS.green, string.format("%d", line_number)) ..
-      ':' .. column ..
-      ':' .. color.color_intervals(color.COLORS.red, content, interval_match)
+      ':' .. color.color_string(color.COLORS.green, string.format("%d", line_match.line)) ..
+      ':' .. line_match.column ..
+      ':' .. color.color_intervals(color.COLORS.red, line_match.content, line_match.matches)
 end
 
 ---Process a single path match and return a formatted string
@@ -53,19 +124,15 @@ end
 ---},
 ---```
 ---@param path string
----@param path_matches SourceGraphAPIPathMatch[]
+---@param sourcegraph_path_matches SourceGraphAPIPathMatch[]
 ---@return string
-local process_path_matches = function(path, path_matches)
-  ---@type Interval[]
-  local interval_matches = {}
+local format_and_color_path_matches = function(path, sourcegraph_path_matches)
+  util.assert_type(path, "string")
+  util.assert_type(sourcegraph_path_matches, "table")
 
-  for _, path_match in ipairs(path_matches) do
-    ---@type Interval
-    local interval_match = { start = path_match.start.column, stop = path_match["end"].column }
-    table.insert(interval_matches, interval_match)
-  end
-
-  return color.color_intervals(color.COLORS.red, path, interval_matches)
+  return color.color_intervals(
+    color.COLORS.red, path, path_matches_convert(path, sourcegraph_path_matches).matches
+  )
 end
 
 ---Convert matches returned by SourceGraph in the common parseable format
@@ -97,7 +164,8 @@ end
 ---
 ---@param matches SourceGraphAPIMatch[]
 ---@return string[]
-M.sourcegraph_api_matches_to_files = function(matches)
+M.format_and_color_sourcegraph_api_matches = function(matches)
+  -- TODO: maybe this should go to "format" file
   util.assert_type(matches, "table")
 
   ---@type string[]
@@ -111,12 +179,62 @@ M.sourcegraph_api_matches_to_files = function(matches)
 
     if line_matches ~= nil then
       for _, line_match in ipairs(line_matches) do
-        table.insert(results, process_line_matches(path, line_match))
+        table.insert(results, format_and_color_line_matches(path, line_match))
       end
     end
 
     if path_matches ~= nil then
-      table.insert(results, process_path_matches(path, path_matches))
+      table.insert(results, format_and_color_path_matches(path, path_matches))
+    end
+  end
+
+  return results
+end
+
+---Get line matches from data returned by SourceGraph
+---
+---@param matches SourceGraphAPIMatch[]
+---@return LineMatch[]
+M.parse_sourcegraph_api_line_matches = function(matches)
+  -- TODO: unittests
+  util.assert_type(matches, "table")
+
+  ---@type LineMatch[]
+  local results = {}
+
+  for _, match in ipairs(matches) do
+    local path = match.path
+
+    local line_matches = match.lineMatches
+
+    if line_matches ~= nil then
+      for _, line_match in ipairs(line_matches) do
+        table.insert(results, line_match_convert(path, line_match))
+      end
+    end
+  end
+
+  return results
+end
+
+---Get path matches from data returned by SourceGraph
+---
+---@param matches SourceGraphAPIMatch[]
+---@return PathMatch[]
+M.parse_sourcegraph_api_path_matches = function(matches)
+  -- TODO: unittests
+  util.assert_type(matches, "table")
+
+  ---@type PathMatch[]
+  local results = {}
+
+  for _, match in ipairs(matches) do
+    local path = match.path
+
+    local path_matches = match.pathMatches
+
+    if path_matches ~= nil then
+      table.insert(results, path_matches_convert(path, path_matches))
     end
   end
 
@@ -129,7 +247,7 @@ end
 ---@field column integer|nil
 
 
----Parse path returned by `sourcegraph_api_matches_to_files` method
+---Parse path returned by `format_and_color_sourcegraph_api_matches` method
 ---
 ---@param path string  # Path to parse
 ---@return Match
@@ -168,11 +286,12 @@ M._parse_match = function(path)
   return { filename = filename, line = line, column = column }
 end
 
----Open file using the path returned from the `sourcegraph_api_matches_to_files` method
+---Open file using the path returned from the `format_and_color_sourcegraph_api_matches` method
 ---
----@param path string # Either a path to the file or a colon separated list of fields as expected to be returned from the `sourcegraph_api_matches_to_files` method
+---@param path string # Either a path to the file or a colon separated list of fields as expected to be returned from the `format_and_color_sourcegraph_api_matches` method
 ---@param cmd string  # Command to open file ("e" by default)
 M.open_file_from_match = function(path, cmd)
+  -- TODO: maybe this should go to util or "format"
   util.assert_type(path, "string")
   util.assert_type(cmd, "string")
 
