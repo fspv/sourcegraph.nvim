@@ -26,5 +26,6 @@ command! -bang -nargs=* SourceGraph call fzf#run(
 \   )
 \ )
 
-" Command to search a word under cursor in the source graph
-map sg/ :SourceGraph <C-r><C-w><CR>
+" Command to search a word under cursor in the source graph (pick FZF or Telescope)
+"map sg/ :SourceGraph <C-r><C-w><CR>
+map sg/ :Telescope sourcegraph default_text=<C-r><C-w><CR>

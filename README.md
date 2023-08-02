@@ -18,10 +18,11 @@ Plug 'fspv/sourcegraph.nvim'
 ## Recommended setup
 Using [plug](https://github.com/junegunn/vim-plug):
 ```vimscript
-Plug 'junegunn/fzf', { 'do': { -> fzf#install() } } 
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 Plug 'nvim-lua/plenary.nvim'
 Plug 'fspv/sourcegraph.nvim'
+Plug 'nvim-telescope/telescope.nvim'
 ```
 
 TODO: add [packer](https://github.com/wbthomason/packer.nvim) instructios
@@ -62,6 +63,34 @@ require("sourcegraph").setup(
   }
 )
 EOF
+```
+
+# Telescope plugin
+Telescope plugin provides you an ability to search as you type. Theoretically it is possible to make it with fzf as well, but it wasn't implemented in plugin yet.
+
+By default the search scope is not limited by a particular repo or revision. You have to define a custom query prefix to search in your current repo. There is a vimscript function already defined (works only with git at the moment, see the assumptions above), to use it, you can do this:
+```lua
+require("telescope").setup {
+  extensions = {
+    sourcegraph = {
+      query_prefix_function = function()
+        return vim.fn["sourcegraph#construct_local_repo_query"]()
+      end
+    },
+  },
+}
+
+require("telescope").load_extension("sourcegraph")
+```
+
+To search SourceGraph with Telescope, you can run this:
+```
+:Telescope sourcegraph
+```
+
+Or using lua
+```
+:lua require('telescope').extensions.sourcegraph.sourcegraph()
 ```
 
 # TODO
