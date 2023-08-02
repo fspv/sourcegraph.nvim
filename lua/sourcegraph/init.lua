@@ -19,6 +19,7 @@ local _config = {
 ---@class RawSearchResult
 ---@field line_matches LineMatch[]
 ---@field path_matches PathMatch[]
+---@field filters Filter[]
 
 local M = {
   -- Top level functions are the ones that user usually wants to call
@@ -66,10 +67,11 @@ local M = {
   ---@param display_limit  number  # The maximum number of matches the backend returns. Defaults to -1 (no limit).
   ---@return RawSearchResult
   search_raw = function(query, display_limit)
-    local matches = api.search(_config.api_url, _config.api_token, query, display_limit).matches
+    local result = api.search(_config.api_url, _config.api_token, query, display_limit)
     return {
-      line_matches = parse.parse_sourcegraph_api_line_matches(matches),
-      path_matches = parse.parse_sourcegraph_api_path_matches(matches),
+      line_matches = parse.parse_sourcegraph_api_line_matches(result.matches),
+      path_matches = parse.parse_sourcegraph_api_path_matches(result.matches),
+      filters = parse.parse_sourcegraph_api_filters(result.filters)
     }
   end,
   ---Open files using the path returned from the `search` method

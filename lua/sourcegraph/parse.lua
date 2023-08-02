@@ -3,6 +3,13 @@ local M = {}
 local util = require("sourcegraph.util")
 local color = require("sourcegraph.color")
 
+---@class Filter
+---@field count integer
+---@field kind string
+---@field label string
+---@field limit_hit boolean
+---@field value string
+
 ---A structure hoding line matches, which can be returned to the external
 ---users (such as Telescope plugin, for example). We can't do it with the
 ---SourceGraphAPILineMatch structure, as it is internal only object, which
@@ -196,7 +203,6 @@ end
 ---@param matches SourceGraphAPIMatch[]
 ---@return LineMatch[]
 M.parse_sourcegraph_api_line_matches = function(matches)
-  -- TODO: unittests
   util.assert_type(matches, "table")
 
   ---@type LineMatch[]
@@ -222,7 +228,6 @@ end
 ---@param matches SourceGraphAPIMatch[]
 ---@return PathMatch[]
 M.parse_sourcegraph_api_path_matches = function(matches)
-  -- TODO: unittests
   util.assert_type(matches, "table")
 
   ---@type PathMatch[]
@@ -236,6 +241,32 @@ M.parse_sourcegraph_api_path_matches = function(matches)
     if path_matches ~= nil then
       table.insert(results, path_matches_convert(path, path_matches))
     end
+  end
+
+  return results
+end
+
+---Get filters from data returned by SourceGraph
+---
+---@param filters SourceGraphAPIFilter[]
+---@return PathMatch[]
+M.parse_sourcegraph_api_filters = function(filters)
+  util.assert_type(filters, "table")
+
+  ---@type Filter[]
+  local results = {}
+
+  for _, filter in ipairs(filters) do
+    table.insert(
+      results,
+      {
+        count = filter.count,
+        kind = filter.kind,
+        label = filter.label,
+        limit_hit = filter.limitHit,
+        value = filter.value
+      }
+    )
   end
 
   return results
